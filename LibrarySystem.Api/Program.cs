@@ -1,18 +1,19 @@
-﻿using LibrarySystem.Api.Extensions;
+﻿using LibrarySystem.Api.ConnectionHelpers;
+using LibrarySystem.Api.Extensions;
 using LibrarySystem.Api.Middlewares;
 using LibrarySystem.Core.Entitties.Identity;
 using LibrarySystem.Repository.Data.Contexts;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
 using static LibrarySystem.Repository.Data.Contexts.IdentityContextSeed;
 
 var builder = WebApplication.CreateBuilder(args);
+var connection = ConnectionHelper.GetConnectionString(builder.Configuration);
 
 builder.Services.AddDbContext<LibraryDbContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+    options.UseNpgsql(connection));
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(options =>
 {
@@ -34,6 +35,24 @@ builder.Services.AddSwaggerGen();
 
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<LibraryDbContext>();
+
+    try
+    {
+        // Ensure database is up-to-date
+        await context.Database.MigrateAsync();
+
+        // Run additional data tasks safely
+        await DataHelper.ManageDataAsync(services);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error during startup migration: {ex.Message}");
+    }
+}
 
 
 if (app.Environment.IsDevelopment())
