@@ -10,10 +10,10 @@ using StackExchange.Redis;
 using static LibrarySystem.Repository.Data.Contexts.IdentityContextSeed;
 
 var builder = WebApplication.CreateBuilder(args);
-var connection = ConnectionHelper.GetConnectionString(builder.Configuration);
+var connection1 = ConnectionHelper.GetConnectionString(builder.Configuration);
 
 builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseNpgsql(connection));
+    options.UseNpgsql(connection1));
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(options =>
 {
